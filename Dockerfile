@@ -4,16 +4,19 @@ FROM ubuntu:20.04 as build-dep
 SHELL ["/bin/bash", "-c"]
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
-# Install Node v16 (LTS)
-ENV NODE_VER="16.14.2"
+# Install Node v18.3.0, from unnoficial repository, which supports riscv
+ENV NODE_VER="18.3.0"
+
+# Add flag to avoid compilation issues
+ENV NODE_OPTIONS="--openssl-legacy-provider"
 RUN ARCH= && \
     dpkgArch="$(dpkg --print-architecture)" && \
   case "${dpkgArch##*-}" in \
-    amd64) ARCH='x64';; \
-    ppc64el) ARCH='ppc64le';; \
-    s390x) ARCH='s390x';; \
-    arm64) ARCH='arm64';; \
-    armhf) ARCH='armv7l';; \
+    amd64) ARCH='x64-pointer-compression';; \
+#    ppc64el) ARCH='ppc64le';; \
+#    s390x) ARCH='s390x';; \
+#   arm64) ARCH='arm64';; \
+#   armhf) ARCH='armv7l';; \
     i386) ARCH='x86';; \
     *) echo "unsupported architecture"; exit 1 ;; \
   esac && \
@@ -21,7 +24,7 @@ RUN ARCH= && \
 	apt-get update && \
 	apt-get install -y --no-install-recommends ca-certificates wget python apt-utils && \
 	cd ~ && \
-	wget -q https://nodejs.org/download/release/v$NODE_VER/node-v$NODE_VER-linux-$ARCH.tar.gz && \
+	wget -q https://unofficial-builds.nodejs.org/download/release/v$NODE_VER/node-v$NODE_VER-linux-$ARCH.tar.gz && \
 	tar xf node-v$NODE_VER-linux-$ARCH.tar.gz && \
 	rm node-v$NODE_VER-linux-$ARCH.tar.gz && \
 	mv node-v$NODE_VER-linux-$ARCH /opt/node
